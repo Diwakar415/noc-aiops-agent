@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'noc_aiops_agent'
+    static_configs:
+      - targets: ['noc-aiops-agent:8080']

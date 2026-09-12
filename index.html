@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Telecom AIOps NOC Automation Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: #0f172a; color: #f8fafc; padding: 24px; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 16px; margin-bottom: 24px; }
+    h1 { font-size: 22px; color: #38bdf8; }
+    .status-badge { background: #16a34a; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: 360px 1fr; gap: 24px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; }
+    .card h2 { font-size: 15px; color: #94a3b8; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+    label { display: block; font-size: 13px; color: #cbd5e1; margin-bottom: 6px; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; margin-bottom: 14px; font-size: 14px; }
+    button { background: #0284c7; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+    button:hover { background: #0369a1; }
+    .topology-container { background: #0b1120; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-bottom: 20px; text-align: center; }
+    canvas { background: transparent; width: 100%; max-width: 700px; height: 180px; }
+    .incident-card { background: #0f172a; border-left: 4px solid #38bdf8; padding: 14px; border-radius: 4px; margin-bottom: 12px; }
+    .incident-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 6px; }
+    .severity-Critical { color: #f87171; }
+    .severity-Major { color: #fbbf24; }
+    .status-Resolved { color: #4ade80 !important; }
+    .log-box { font-size: 12px; color: #94a3b8; background: #020617; padding: 10px; border-radius: 4px; margin-top: 8px; white-space: pre-wrap; line-height: 1.4; }
+    .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .metric-card { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 6px; text-align: center; }
+    .metric-val { font-size: 20px; font-weight: 700; color: #38bdf8; }
+    .metric-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Telecom AIOps NOC Automation Dashboard</h1>
+    <div class="status-badge" id="agent-status">Agent Online (Port 8080)</div>
+  </header>
+
+  <div class="grid">
+    <!-- Trigger Alarm Form -->
+    <div class="card">
+      <h2>Trigger Fault / Alarm Event</h2>
+      <label>Target Site ID</label>
+      <select id="site_id">
+        <option value="AP001">AP001 (Hyderabad CyberTowers)</option>
+        <option value="AP002">AP002 (Bangalore Whitefield)</option>
+        <option value="AP003">AP003 (Chennai OMR)</option>
+      </select>
+
+      <label>Source System</label>
+      <select id="source_system">
+        <option value="NetAct-RAN">Nokia NetAct (RAN)</option>
+        <option value="Netcool-IP-Transport">IBM Netcool OMNIbus</option>
+        <option value="Helix-Operations">BMC Helix Operations</option>
+      </select>
+
+      <label>Alarm Signature</label>
+      <select id="alarm_name">
+        <option value="BTS OM Link Failure">BTS OM Link Failure (IPsec SA Timeout)</option>
+        <option value="Transport Link Failure (NE3WS)">Transport Link Failure (NE3WS / High BER)</option>
+        <option value="BGP Flapping / Session Down">BGP Flapping / Session Down</option>
+        <option value="Cell Out of Service">Cell Out of Service (Radio Degraded)</option>
+      </select>
+
+      <label>Severity</label>
+      <select id="severity">
+        <option value="Critical">Critical</option>
+        <option value="Major">Major</option>
+        <option value="Minor">Minor</option>
+        <option value="Clear">Clear (Trigger Auto-Closure)</option>
+      </select>
+
+      <button onclick="sendAlarm()">⚡ Trigger AIOps Workflow</button>
+      <button onclick="triggerQuickStorm()" style="background: #e11d48; margin-top: 4px;">🚨 Simulate Alarm Storm (Correlation Demo)</button>
+    </div>
+
+    <!-- Main Live Operations Center -->
+    <div>
+      <!-- Key AIOps Metrics -->
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-val" id="metric-tickets">0</div>
+          <div class="metric-label">Remedy Incidents Created</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="metric-healed" style="color: #4ade80;">0</div>
+          <div class="metric-label">Auto-Healed / Auto-Closed</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: #a855f7;">~85%</div>
+          <div class="metric-label">MTTR Reduction Rate</div>
+        </div>
+      </div>
+
+      <!-- Live Topology Map -->
+      <div class="topology-container">
+        <canvas id="topoCanvas" width="700" height="180"></canvas>
+      </div>
+
+      <!-- Active Incidents -->
+      <div class="card">
+        <h2>Live Correlated Incident Stream & AI Worklogs</h2>
+        <div id="incidents-container">
+          <p style="color: #64748b;">No active incidents. Trigger an alarm above to observe autonomous triage.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let siteStatuses = { "AP001": "OK", "AP002": "OK", "AP003": "OK" };
+
+    function drawTopology() {
+      const canvas = document.getElementById("topoCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Core Hub
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath();
+      ctx.arc(350, 40, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = "11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("CORE / AGG RTR", 350, 75);
+
+      // Sites
+      const sites = [
+        { id: "AP001", x: 140, y: 130, label: "AP001 (HYD)" },
+        { id: "AP002", x: 350, y: 130, label: "AP002 (BLR)" },
+        { id: "AP003", x: 560, y: 130, label: "AP003 (MAA)" }
+      ];
+
+      sites.forEach(s => {
+        const isFault = siteStatuses[s.id] === "FAULT";
+        
+        // Link line
+        ctx.strokeStyle = isFault ? "#ef4444" : "#22c55e";
+        ctx.lineWidth = isFault ? 3 : 2;
+        ctx.setLineDash(isFault ? [5, 5] : []);
+        ctx.beginPath();
+        ctx.moveTo(350, 40);
+        ctx.lineTo(s.x, s.y);
+        ctx.stroke();
+
+        // Site Node
+        ctx.setLineDash([]);
+        ctx.fillStyle = isFault ? "#ef4444" : "#22c55e";
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fillText(s.label, s.x, s.y + 28);
+      });
+    }
+
+    async function sendAlarm() {
+      const siteId = document.getElementById("site_id").value;
+      const severity = document.getElementById("severity").value;
+      siteStatuses[siteId] = (severity === "Clear") ? "OK" : "FAULT";
+      drawTopology();
+
+      const payload = {
+        alarm_id: "ALM-" + Math.floor(1000 + Math.random() * 9000),
+        site_id: siteId,
+        source_system: document.getElementById("source_system").value,
+        alarm_name: document.getElementById("alarm_name").value,
+        severity: severity
+      };
+
+      try {
+        await fetch("/webhook/alarm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        setTimeout(refreshIncidents, 600);
+      } catch (err) {
+        alert("Failed to send alarm: " + err);
+      }
+    }
+
+    async function triggerQuickStorm() {
+      siteStatuses["AP001"] = "FAULT";
+      drawTopology();
+      
+      // Send root transport alarm
+      await fetch("/webhook/alarm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alarm_id: "STORM-01",
+          site_id: "AP001",
+          source_system: "Netcool-IP-Transport",
+          alarm_name: "Transport Link Failure (NE3WS)",
+          severity: "Critical"
+        })
+      });
+
+      // Send 2 cascading radio alarms
+      setTimeout(async () => {
+        await fetch("/webhook/alarm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            alarm_id: "STORM-02",
+            site_id: "AP001",
+            source_system: "NetAct-RAN",
+            alarm_name: "Cell Out of Service (L1800)",
+            severity: "Major"
+          })
+        });
+        refreshIncidents();
+      }, 500);
+    }
+
+    async function refreshIncidents() {
+      try {
+        const resp = await fetch("/incidents");
+        const incidents = await resp.json();
+        const container = document.getElementById("incidents-container");
+        
+        const keys = Object.keys(incidents);
+        document.getElementById("metric-tickets").innerText = keys.length;
+        
+        let healedCount = 0;
+        keys.forEach(k => {
+          if (incidents[k].status === "Resolved") healedCount++;
+        });
+        document.getElementById("metric-healed").innerText = healedCount;
+
+        if (keys.length === 0) {
+          container.innerHTML = '<p style="color: #64748b;">No incidents found.</p>';
+          return;
+        }
+
+        container.innerHTML = keys.map(k => {
+          const inc = incidents[k];
+          return `
+            <div class="incident-card" style="border-left-color: ${inc.status === 'Resolved' ? '#4ade80' : '#38bdf8'}">
+              <div class="incident-header">
+                <span>[${inc.incident_number}] Site ${inc.site_id} - ${inc.alarm_name}</span>
+                <span class="status-${inc.status}">Status: ${inc.status} (${inc.assigned_group})</span>
+              </div>
+              <div class="log-box">${inc.worklogs.join('\n\n')}</div>
+            </div>
+          `;
+        }).reverse().join('');
+      } catch (err) {
+        console.error("Error refreshing incidents:", err);
+      }
+    }
+
+    drawTopology();
+    setInterval(refreshIncidents, 3000);
+    refreshIncidents();
+  </script>
+</body>
+</html>

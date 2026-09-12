@@ -1,0 +1,19 @@
+================================================================================
+PROJECT EXPERIENCE SECTION (COPY & PASTE INTO YOUR RESUME)
+================================================================================
+
+Telecom AIOps & Network Automation Agent (Python, REST API, Netmiko, Helix/Remedy)
+Role: AIOps Automation Engineer / Lead NOC Automation Specialist
+
+Key Contributions & Achievements:
+• Engineered an end-to-end event-driven AIOps pipeline integrating Nokia NetAct, IBM Netcool OMNIbus, and BMC Remedy / Helix ITSM via REST API, cutting incident creation time from 8 minutes to < 2 seconds.
+• Architected a topology-aware correlation engine that suppressed 80%+ of alarm storm noise by grouping cascading RAN/Cell drops under root-cause IP aggregation router failures.
+• Built asynchronous Python diagnostic workers utilizing Netmiko, SNMP, and ICMP to automate S1-C/S1-U IPsec tunnel inspection, BGP peering verification, and optical transceiver (SFP) health checks.
+• Integrated LLM / AI-driven Root Cause Analysis (RCA) with structured JSON output, assessing blast radius and automatically populating detailed technical summaries into Remedy worklogs.
+• Implemented closed-loop self-healing playbooks (automated IPsec renegotiation, soft BGP refreshes, port bouncing) with pre/post-check health verifications, reducing MTTR by ~85%.
+• Containerized the complete microservice architecture using Docker, Docker Compose, and Prometheus metrics exporter for enterprise-grade observability and Grafana monitoring.
+
+Technologies & Tools:
+Python 3, REST APIs, Fast Webhooks, Netmiko, BMC Remedy/Helix ITSM, IBM Netcool, Nokia NetAct, SNMP v2c/v3, Cisco IOS / Nokia SR-OS / Huawei CLI, BGP, S1-U/S1-C, IPsec, Docker, Prometheus.
+
+================================================================================
